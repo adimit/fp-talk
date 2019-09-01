@@ -19,27 +19,27 @@ fun <T> List<T>.find(t: T, eqty: Eqty<T>): List<T>
 
 fun fooList(l: List<String>) = l.find("FOO", StringEqtyInstance)
 
-interface Kind<out F, out A>
-class ForMaybe private constructor()
-typealias MaybeOf<T> = Kind<ForMaybe, T>
-
 interface Functor<F> {
     fun <A, B> Kind<F, A>.map(f: (A) -> B): Kind<F, B>
 }
 
-fun <A> MaybeOf<A>.fix(): Maybe<A> = this as Maybe<A> // 😱
+interface Kind<out F, out A>
+class ForMaybe private constructor()
+typealias MaybeOf<T> = Kind<ForMaybe, T>
 
 sealed class Maybe<out T> : MaybeOf<T> {
     object No: Maybe<Nothing>()
     data class Yes<T>(val just: T): Maybe<T>()
 
-    companion object
     fun <B> map(f: (T) -> B): MaybeOf<B> = when (this) {
         is No -> No
         is Yes -> Yes(f(just))
     }
+
+    companion object
 }
 
+fun <A> MaybeOf<A>.fix(): Maybe<A> = this as Maybe<A> // 😱
 interface MaybeFunctorInstance : Functor<ForMaybe> {
     override fun <A, B> Kind<ForMaybe, A>.map(f: (A) -> B): Kind<ForMaybe, B> {
         return fix().map { f(it) }
