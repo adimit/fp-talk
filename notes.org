@@ -1,0 +1,406 @@
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/
+#+REVEAL_TRANS: linear
+#+REVEAL_THEME: black
+#+REVEAL_HLEVEL: 2
+#+OPTIONS: num:nil toc:nil
+#+EXCLUDE_TAGS: noexport
+#+AUTHOR: Aleksandar Dimitrov
+#+TITLE: Funktionale Programmierung in Kotlin mit Λrrow
+
+* Notes                                                            :noexport:
+** Introduction
+- Mention last talk with very interesting, but esoteric topic
+- Cannot be used in a modern language (although JS allows return values from generators, very similar)
+- What if you have to use languages management approves of?
+- This talk is going to feature a lot of talk about type systems
+- If your code is supposed to support a company erecting a six-story building, then…
+- You need to build your software in a relatively conservative language, …
+- With a type system
+** Intro type system
+SPJ: A type system is supposed to:
+- reject bad programs ("obviously" wrong programs)
+- accept good programs (programs that make obvious sense, and do something useful)
+- In the end it means: type systems are supposed to preclude run-time
+  errors, without obstructing the programmer in her creativity, and
+  still allow for as many programs *that will not crash* as possible.
+- A type system avoids segfaults, and memory corruption
+- This is always a trade-off: some valid programs will not make it through. Some invalid programs may make it through.
+- I would argue that there are more purposes:
+  - make the programmer externalise her mental model of how the code and data flows
+  - think about the necessary abstractions, and remind the coder of
+    what eventualities they need to think about
+  - An untyped, but incorrect program may never crash in runtime — by accident. Until you hit production.
+  - Types serve as documentation for the next programmer (aka, you, tomorrow)
+** Kotlin Overview
+- JVM language
+- Developed by JetBrains (of IDE fame)
+- Sponsored by Google
+- Primary language for Android Dev nowadays
+- Developed in 2010-2012 because Scala was good, but compile times too slow
+
+*** Features
+- Java Interop
+- (fast compile times)
+- Reference immutability
+- Namespaced extension functions (really just syntactic sugar) (Very important later on, when we talk about type classes)
+- Show Kotlin code example
+- Implicit Deconstruction using =.component0= … =.componentN= methods
+- lexical scoping
+- Data classes (value types)
+- Support for pseudo ADTs via sealed classes
+- Syntactic support for Nullable Monad
+- co-routines
+
+*** Arrow-kt
+**** Basic data types
+**** Extension functions on common types
+**** Lenses
+**** Typeclasses
+** Type classes
+A type constraint such as =Ord= in Haskell is replaced at runtime with
+the implementation of the implementing function
+
+Code looks like this:
+#+BEGIN_SRC haskell
+foo :: forall a. Ord a => [a] => [a]
+foo = \xs. sort . reverse $ xs
+#+END_SRC
+
+After calling =foo [1,2,3]=, this compiles to some intermediate representation along the lines of
+#+BEGIN_SRC haskell
+foo = \(xs: [Int]). sort @Int @fOrdInt (reverse @Int xs)
+#+END_SRC
+
+The type was specialised to =@Int=, (first argument to the generic
+parametric functions) and the =@fOrdInt= function comes from? The =Ord= instance of =Int=!
+
+#+BEGIN_SRC haskell
+instance Ord Int where
+  compare a b = -- … This compiles to @fOrdInt
+#+END_SRC
+
+Parametric types? Another argument to your function (think reified
+types.) Type classes? Yet another argument to your function, namely
+the implementation of the type class.
+
+* Talk
+** TODO Einführung
+*** TODO Über mich
+logos of languages
+github & twitter =@adimit=
+computational linguistics
+itdesign since March
+*** Introduction
+- Funktionale Programme im =$JOB= bei =$CORP=?
+- Management muss Technologien absegnen
+- Neue Mitarbeiter einlernen?
+- Interop mit bestehenden Systemen?
+- Code-Qualität?
+*** Type Systems
+Was macht ein Typensystem?
+
+- /Schlechte/ Programme ablehnen
+- /Gute/ Programme annehme
+
+Memory-Safety: ein typengechecktes Programm soll *nicht* durch
+Speicherkorruption abstürzen können.
+
+Aber: es soll Programmierung nicht in ihrer Kreativität einschränken
+
+*** Typensysteme als Gerüst
+Typensysteme können bei der Architektur eines Programms helfen:
+
+- Verdeutlichung/Externalisierung des Datenflusses
+- Schnelle Interface-Prototypen ohne Implementierung
+- Dokumentation
+- Codierung eines Teils der Business-Logik
+
+** Overview
+- Kotlin
+- Etwas Theorie
+- Λrrow Basics
+- Typenklassen in Kotlin
+- Beispiel
+** Kotlin
+- Entwickelt durch JetBrains (of IDE fame)
+- Läuft auf JVM, super Java-Interop
+- Sponsored by Google
+  - 1st Class Android-Support
+- Entwickelt in 2010-2012
+  - Scala war zwar toll, aber der Compiler war ihnen zu lahm 🐢
+*** Warum Kotlin?
+- Wenn Euer Team sich vor Scala & Clojure fürchtet…
+- … aber Java schon zu abgestanden schmeckt
+- Onboarding von Java-Kollegen zu Kotlin: problemlos
+- Kotlin unterstützt FP syntaktisch besser als Java
+*** Features
+- Kompiliert schnell 🐇
+- 1st class IDE support
+- Einfache Value-Types (data classes)
+- Variablendeklaration mit =val= (reference immutability)
+
+#+BEGIN_SRC kotlin
+  data class Customer(
+          val name: String,
+          val email: String,
+          val company: String)
+#+END_SRC
+*** Features
+- 1st class Funktionen höherer Ordnung
+
+#+BEGIN_SRC kotlin
+  val positiveNumbers = list.filter { it > 0 }
+
+  // list.filter({element -> element > 0})
+#+END_SRC
+
+#+BEGIN_SRC kotlin
+  strings.filter { it.length == 5 }
+         .sortedBy { it }
+         .map { it.toUpperCase() }
+#+END_SRC
+
+*** Rudimentäres Pattern-Matching
+- Variablen können nach ihren Konstituenten dekonstruiert werden
+
+#+BEGIN_SRC kotlin
+  data class Person(val age: Number, val name: String);
+
+  fun printPerson(a: Person) {
+      val (age, name) = a
+
+      println("Meet ${name}, ${age} years old.")
+  }
+#+END_SRC
+
+*** Wirklich Pattern-Matching?
+
+In Wahrheit, ein schmutziger Trick:
+
+[[./trick.png]]
+
+*** Extension Functions
+#+BEGIN_SRC kotlin
+  fun <T> MutableList<T>.swap(i: Int, j: Int) {
+      val tmp = this[i] // 'this' corresponds to the list
+      this[i] = this[j]
+      this[j] = tmp
+  }
+
+  // …
+
+  fun <T> foo(list: MutableList<T>) {
+      list.swap(0, 1)
+  }
+#+END_SRC
+
+*** "Nur" syntaktischer Zucker
+
+#+BEGIN_SRC kotlin
+  fun <T> swap(me: MutableList<T>, i: Int, j: Int) {
+      val tmp = me[i]
+      me[i] = me[j]
+      me[j] = tmp
+  }
+#+END_SRC
+
+*** Tail Call Recursion
+#+BEGIN_SRC kotlin
+  sealed class L<out T> {
+      object Empty: L<Nothing>()
+      data class Cons<T>(val h: T): L<T>()
+  }
+
+  fun L<Int>.sum(): Int = add(0)
+
+  private tailrec fun L<Int>.add(n0: Int): Int = when (this) {
+      is L.Empty -> n0
+      is L.Cons -> this.add(this.h)
+  }
+#+END_SRC
+*** TODO FP in Kotlin?
+- Funktionen sind niemals garantiert referentiell transparent
+- =var=-Zuweisung
+- =val=-Zuweisung funktioniert wie =final= in Java
+- das Typensystem wird uns etwas Kopfzerbrechen bereiten…
+** TODO Etwas Theorie
+*** Was ist ein Typ?
+Typen kann man als *Mengen von Werten* betrachten
+- =Int=
+$$\{ x | x \in \mathcal{N} \} = \{ 1, 2, 3, \ldots\}$$
+
+*** Bewohner eines Typen
+- =enum class Colour { red, green }=
+$$  \{ \mathrm{red}, \mathrm{green} \} $$
+
+- Man spricht von *Bewohnern eines Typen* (Type inhabitation)
+
+*** Spezielle Typen in Kotlin:
+- =Any= wird von /allen Werten/ bewohnt
+- =Nothing= wird von /keinem Wert/ bewohnt
+- =Unit= hat genau einen Bewohner: =Unit=
+*** Algebraische Datentypen
+Ein *Algebraischer Datentyp* ist eine Komposition aus anderen Typen.
+
+*** Produkttypen
+#+BEGIN_SRC kotlin
+  data class Triple<A, B, C>(val a: A, val b: B, c: C)
+#+END_SRC
+- Die /Anzahl an Bewohnern/ dieses Typen ist *das Produkt* der Bewohnerzahl
+  der Typen, aus denen er besteht
+
+*** Summentypen
+Inheritance lässt sich in Kotlin beschränken.
+
+#+BEGIN_SRC kotlin
+  sealed class Tree<T> {
+    data class Leaf<T>(val t: T): Tree<T>()
+    data class Branch<T>(
+            val l: Tree<T>,
+            val r: Tree<T>
+    ): Tree<T>()
+  }
+#+END_SRC
+*** "Pattern Matching"
+#+BEGIN_SRC kotlin
+  fun <T> traverse(t: Tree<T>): List<T> {
+      return when (t) {
+          is Tree.Leaf -> listOf(t.t)
+          is Tree.Branch -> traverse(t.l) + traverse(t.r)
+      }
+  }
+#+END_SRC
+*** TODO λ-Kalkül
+:NOTE:
+Rework this section. Needs to have a more formal introduction to have the actual rules
+:END:
+Abstraktion:
+
+$$ f = 42 + (27 * 42) $$
+$$ f' = \lambda x. x + (27 * x) $$
+$$ f'' = \lambda x. \lambda y. x + (y * x) $$
+
+#+REVEAL: split
+Konversion:
+$$ f''(12) = \lambda y. 12 + (y * 12) $$
+$$ f''(12)(2) = 12 + (2 * 12) = 36$$
+*** TODO λ-Calculus overview
+- Lambdas are all the rage today
+- but java has had lambdas since 1.5 (5)!
+- 5? I thought it was Java 8!
+- Well… Lambdas in type signatures: Generics!
+*** TODO Typen und Arten
+*** TODO Exercise:
+Given the following signature:
+=f :: Λf.Λa.Λb. f a → f (a → b) → f b=
+- What are the kinds of =a=, =b=, =f=?
+- Which familiar function does this look like? Or: what is the most general function that inhabits this type signature?
+- What constraints does =f= need to be =map=?
+** TODO Λrrow-kt Basics
+*** Data types
+- Operationen auf Datentypen manipulieren nur den Datentyp selbst, nicht sein generisches Argument
+- Beispiele:
+  - =Option= Monad, wie =∀a. Maybe a= in Haskell
+  - =Either= Monad
+  - =Validated= Applicative, Aggregation von Validierung und Fehlerwerten
+*** TODO Error-Handling & ROP
+*** TODO Optics/Lenses
+*** TODO Extension Functions
+** TODO Typenklassen
+*** Typenklassen
+Eine *Typenklasse* (type class) =T a= definiert eine Reihe von *Funktionen* über einen Wert vom Typ =a=.
+
+Typenklassen abstrahieren über /ad hoc polymorphism/, auch /overloading/.
+*** Haskell-Beispiel
+#+BEGIN_SRC haskell
+  class Equality a where
+    equals :: a -> a -> Bool
+
+  instance (Equality a) => Equality ([a]) where
+    equals [] [] = True
+    equals [] _ = False
+    equals _ [] = False
+    equals (x:xs) (y:ys) = equals x y && equals xs ys
+#+END_SRC
+*** Beispiele für Typenklassen
+Grundsätzlich unterscheiden wir
+
+- value-Typenklassen:
+  - =Ord=, =Num=, =Show=, …
+- type constructor-Typenklassen
+  - =Functor=, =Monoid=, =Applicative=, =Monad=, …
+*** Wie funktionieren Typenklassen während des Kompiliervorgangs?
+#+BEGIN_SRC haskell
+  sort :: Ord a => [a] -> [a]
+  reverse :: [a] -> [a]
+
+  f :: (Ord a) => [a] ->[a]
+  f l = (reverse . sort) l
+
+  main = print $ f [1,2,3]
+#+END_SRC
+
+#+REVEAL: split
+#+BEGIN_SRC haskell
+  class (Eq a) => Ord a where
+    compare:: a -> a -> Ordering
+
+  instance (Eq a) => Ord Int where
+    compare a b = -- …
+#+END_SRC
+
+#+REVEAL: split
+#+BEGIN_SRC haskell
+  sort :: Ord a => [a] -> [a]
+  reverse :: [a] -> [a]
+
+  f :: (Ord a) => [a] ->[a]
+  f l = (λd:Ord a) (reverse . sort d) l
+#+END_SRC
+
+- =d= Verzeichnis aller Instanzen von =compare=
+- =d= wird vom Compiler injiziert
+*** Warum kann Kotlin keine Higher-Order Typenklassen haben?
+
+#+BEGIN_SRC kotlin
+  fun <A> f(l: List<Maybe<A>>): List<A> // valid!
+  fun <A, B> map(l: List<A>, f: (A) -> B): List<B> //valid!
+#+END_SRC
+
+- Abstrakter Typ =A= hat Kind =*=.
+- Konkrete Typen =List= und =Maybe= haben Kind =* → *= (Type Constructor)
+
+*** Typenkonstruktoren können nicht generisch sein!
+
+#+BEGIN_SRC kotlin
+  fun <F, A, B> map(l: F<A>, f: (A) -> B): F<B> // invalid!
+#+END_SRC
+
+- Kotlin Generics *müssen* von Kind =*= sein!
+- Wir können nicht über Typen vom Kind =* → *= abstrahieren!
+*** TODO Type-Level Defunctionalisation
+*** TODO Beispiele für Defunctionalisation
+*** TODO Monad Comprehensions
+** TODO Beispiel
+Created: [2019-08-29 Thu 22:12]
+Ref: notes.org [[file:~/var/seafile/Seafile/itdesign/fp-workshop/notes.org::*Random:][Random:]]
+
+- we want to create a program that retrieves some data from somewhere, somehow
+- it manipulates that data in some way
+- it retrieves more data from a second source
+- it then manipulates those two sets of data to produce a composite
+- it returns that composite
+
+ok, great, but where's the data source? What happens when retrieval
+doesn't go as planned. (Advanced: can we parallelize retrieval, or do
+we need to depend on the first call to know the second one?)
+
+The example could be skills creation: we get a list of strings. Get
+all the skills, get the matching ids. Also the strings (skill names)
+that didn't match. Then create new entries for each of these strings
+(bonus points: in parallel), get their ids. Join the lists (bonus
+points: in the original order) and execute a last request to write the
+new list.
+
+Some inspiration:
+- https://github.com/dcampogiani/polyjokes/blob/master/README.md
