@@ -132,7 +132,7 @@ itdesign since March
 Was macht ein Typensystem?
 
 - /Schlechte/ Programme ablehnen
-- /Gute/ Programme annehme
+- /Gute/ Programme annehmen
 
 Memory-Safety: ein typengechecktes Programm soll *nicht* durch
 Speicherkorruption abstürzen können.
@@ -177,7 +177,7 @@ Typensysteme können bei der Architektur eines Programms helfen:
           val email: String,
           val company: String)
 #+END_SRC
-*** Features
+*** Erste Klasse
 - 1st class Funktionen höherer Ordnung
 
 #+BEGIN_SRC kotlin
@@ -250,12 +250,13 @@ In Wahrheit, ein schmutziger Trick:
       is L.Cons -> this.add(this.h)
   }
 #+END_SRC
-*** TODO FP in Kotlin?
+*** FP in Kotlin?
 - Funktionen sind niemals garantiert referentiell transparent
 - =var=-Zuweisung
 - =val=-Zuweisung funktioniert wie =final= in Java
 - das Typensystem wird uns etwas Kopfzerbrechen bereiten…
-** TODO Etwas Theorie
+- aber Λrrow hilft
+** Etwas Theorie
 *** Was ist ein Typ?
 Typen kann man als *Mengen von Werten* betrachten
 - =Int=
@@ -302,18 +303,12 @@ Inheritance lässt sich in Kotlin beschränken.
       }
   }
 #+END_SRC
-*** TODO λ-Kalkül
-:NOTE:
-Rework this section. Needs to have a more formal introduction to have the actual rules
-:END:
-Abstraktion:
-
+*** λ-Kalkül: Abstraktion
 $$ f = 42 + (27 * 42) $$
 $$ f' = \lambda x. x + (27 * x) $$
 $$ f'' = \lambda x. \lambda y. x + (y * x) $$
 
-#+REVEAL: split
-Konversion:
+*** λ-Kalkül: Konversion
 $$ f''(12) = \lambda y. 12 + (y * 12) $$
 $$ f''(12)(2) = 12 + (2 * 12) = 36$$
 *** Type Functions
@@ -334,26 +329,54 @@ $$ f''(12)(2) = 12 + (2 * 12) = 36$$
   //  .compose(f: (List<Int>) -> Int): (List<String>) -> Int
 #+END_SRC
 *** Typen und Arten
-| Type                      | Kind          |
-|---------------------------+---------------|
-| =Int=, =String=, =Object= | =*=           |
-| List<A>, Maybe<A>         | =* → *=       |
-| List<Int>, Maybe<Object>  | =* → *=       |
-| List<Maybe<T>>            | =* → *=       |
-*** TODO Aufgabe:
+| Type                      | Kind    |
+|---------------------------+---------|
+| =Int=, =String=, =Object= | =*=     |
+| List<A>, Maybe<A>         | =* → *= |
+| List<Int>, Maybe<Object>  | =*=     |
+| List<Maybe<T>>            | =* → *= |
+*** Aufgabe:
 #+ATTR_REVEAL: :frag roll-in
-  * =fun λF.A.B. F<A> → ((a) → b) → F<B>=
+  * =fun λF.A.B. F<A> → ((A) → B) → F<B>=
   * Kind von =A=, =B=?
   * Kind von =F=?
 
 #+ATTR_REVEAL: :frag roll-in
-  * =(* → *) → *=
+  * =(* → *)=
   * Nach welcher Funktion sieht es aus?
 
 #+ATTR_REVEAL: :frag roll-in
-  * Wie muss =F= aussehen, damit =map= funktioniert?
+  * =map=!
+  * Das Kind der Signatur der Funktion?
 
-** TODO Λrrow-kt Basics
+#+ATTR_REVEAL: :frag roll-in
+  * =(* → *) → * → * -> *=
+
+** Λrrow-kt Basics
+*** Ein Problem
+Erlaubt einfache Manipulation verschachtelter Value Types
+#+BEGIN_SRC kotlin
+  data class Street(val number: Int, val name: String)
+  data class Address(val city: String, val street: Street)
+  data class Company(val name: String, val address: Address)
+  data class Employee(val name: String, val company: Company?)
+#+END_SRC
+*** Λrrow für mehr Durchblick!
+#+BEGIN_SRC kotlin
+  @optics data class Street(
+      val number: Int, val name: String) {companion object}
+  @optics data class Address(
+      val city: String, val street: Street) {companion object}
+  @optics data class Company(
+      val name: String, val address: Address) {companion object}
+  @optics data class Employee(
+      val name: String, val company: Company?) {companion object}
+
+  val e : Employee = TODO()
+  val f = Employee.company.address
+      .street.name.modify(e) { "$it-Str" }
+#+END_SRC
+
 *** Data types
 Operationen auf Datentypen manipulieren nur den Datentyp selbst, nicht sein generisches Argument
 
@@ -368,9 +391,8 @@ Operationen auf Datentypen manipulieren nur den Datentyp selbst, nicht sein gene
      //...
   }
 
-  val dangerous = Try { throwsAnException() }
+  val dangerous = { throwsAnException() }.try_()
   // dangerous = Failure(e=...)
-
 #+END_SRC
 *** Validierung
 #+BEGIN_SRC kotlin
@@ -383,9 +405,7 @@ Operationen auf Datentypen manipulieren nur den Datentyp selbst, nicht sein gene
 #+END_SRC
 
 Erlaubt /sequentielle/ und /parallele/ Validierung
-*** Optics/Lenses
-Immutable Value Types sind oft schwierig zu manipulieren
-** TODO Typenklassen
+** Typenklassen
 *** Typenklassen
 Eine *Typenklasse* (type class) =T a= definiert eine Reihe von *Funktionen* über einen Wert vom Typ =a=.
 
