@@ -284,18 +284,43 @@ $$ f'' = \lambda x. \lambda y. x + (y * x) $$
 Konversion:
 $$ f''(12) = \lambda y. 12 + (y * 12) $$
 $$ f''(12)(2) = 12 + (2 * 12) = 36$$
-*** TODO λ-Calculus overview
-- Lambdas are all the rage today
-- but java has had lambdas since 1.5 (5)!
-- 5? I thought it was Java 8!
-- Well… Lambdas in type signatures: Generics!
-*** TODO Typen und Arten
-*** TODO Exercise:
-Given the following signature:
-=f :: Λf.Λa.Λb. f a → f (a → b) → f b=
-- What are the kinds of =a=, =b=, =f=?
-- Which familiar function does this look like? Or: what is the most general function that inhabits this type signature?
-- What constraints does =f= need to be =map=?
+*** Type Functions
+#+BEGIN_SRC kotlin
+  fun <A, B, C> ((B) -> C)
+          .compose(f: (A) -> B): (A) -> C = { this(f(it)) }
+
+  fun List<Int>.sum(): Int = TODO()
+  fun List<String>.parse(): List<Int> = TODO()
+
+  val parseAndSum = List<Int>::sum
+  // (λA.B.C. ((B) -> C).compose(f: (A) -> B): (A) -> C)
+  //                      (List<String>) (List<Int>) (Int)
+      .compose<List<String>, List<Int>, Int>(
+          List<String>::parse)
+
+  // ((List<String>) -> List<Int>)
+  //  .compose(f: (List<Int>) -> Int): (List<String>) -> Int
+#+END_SRC
+*** Typen und Arten
+| Type                      | Kind          |
+|---------------------------+---------------|
+| =Int=, =String=, =Object= | =*=           |
+| List<A>, Maybe<A>         | =* → *=       |
+| List<Int>, Maybe<Object>  | =* → *=       |
+| List<Maybe<T>>            | =* → *=       |
+*** TODO Aufgabe:
+#+ATTR_REVEAL: :frag roll-in
+  * =fun λF.A.B. F<A> → ((a) → b) → F<B>=
+  * Kind von =A=, =B=?
+  * Kind von =F=?
+
+#+ATTR_REVEAL: :frag roll-in
+  * =(* → *) → *=
+  * Nach welcher Funktion sieht es aus?
+
+#+ATTR_REVEAL: :frag roll-in
+  * Wie muss =F= aussehen, damit =map= funktioniert?
+
 ** TODO Λrrow-kt Basics
 *** Data types
 - Operationen auf Datentypen manipulieren nur den Datentyp selbst, nicht sein generisches Argument
@@ -398,7 +423,6 @@ Grundsätzlich unterscheiden wir
      = l.find("FOO", StringEqtyInstance)
 #+END_SRC
 *** … und Higher-Kinded Types
-#+REVEAL: split
 #+BEGIN_SRC kotlin
   sealed class Maybe<out T> {
       object No: Maybe<Nothing>()
@@ -410,11 +434,15 @@ Grundsätzlich unterscheiden wir
       }
   }
 #+END_SRC
+
+#+REVEAL: split
 #+BEGIN_SRC kotlin
   interface Functor<F> {
       fun <A, B> F<A>.map(f: (A) -> B): F<B>
   }
 #+END_SRC
+
+#+REVEAL: split
 #+BEGIN_SRC kotlin
   interface Functor<F> {
       fun <A, B> Kind<F, A>.map(f: (A) -> B): Kind<F, B>
@@ -455,6 +483,7 @@ Grundsätzlich unterscheiden wir
   incrementAll(Maybe.functor(), Maybe.Yes(1)).fix() // just 2
   incrementAll(Maybe.functor(), Maybe.No).fix() // No
 #+END_SRC
+*** TODO Λrrow Sugar
 *** TODO Monad Comprehensions
 ** TODO Beispiel
 Created: [2019-08-29 Thu 22:12]

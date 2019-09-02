@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Funktionale Programmierung in Kotlin mit Λrrow</title>
+<meta name="author" content="(Aleksandar Dimitrov)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/css/reveal.css"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/css/theme/black.css" id="theme"/>
+
+
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">Funktionale Programmierung in Kotlin mit Λrrow</h1><h2 class="author">Aleksandar Dimitrov</h2><p class="date">Created: 2019-09-02 Mo 17:55</p>
+</section>
+
+<section>
+<section id="slide-org140f67f">
+<h2 id="org140f67f">Talk</h2>
+<div class="outline-text-2" id="text-org140f67f">
+</div>
+</section>
+</section>
+<section>
+<section id="slide-org2fd934c">
+<h3 id="org2fd934c"><span class="todo TODO">TODO</span> Einführung</h3>
+<div class="outline-text-3" id="text-org2fd934c">
+</div>
+</section>
+<section id="slide-org2796fd0">
+<h4 id="org2796fd0"><span class="todo TODO">TODO</span> Über mich</h4>
+<p>
+logos of languages
+github &amp; twitter <code>@adimit</code>
+computational linguistics
+itdesign since March
+</p>
+</section>
+<section id="slide-org5cae5aa">
+<h4 id="org5cae5aa">Introduction</h4>
+<ul>
+<li>Funktionale Programme im <code>$JOB</code> bei <code>$CORP</code>?</li>
+<li>Management muss Technologien absegnen</li>
+<li>Neue Mitarbeiter einlernen?</li>
+<li>Interop mit bestehenden Systemen?</li>
+<li>Code-Qualität?</li>
+
+</ul>
+</section>
+<section id="slide-org1415f71">
+<h4 id="org1415f71">Type Systems</h4>
+<p>
+Was macht ein Typensystem?
+</p>
+
+<ul>
+<li><i>Schlechte</i> Programme ablehnen</li>
+<li><i>Gute</i> Programme annehme</li>
+
+</ul>
+
+<p>
+Memory-Safety: ein typengechecktes Programm soll <b>nicht</b> durch
+Speicherkorruption abstürzen können.
+</p>
+
+<p>
+Aber: es soll Programmierung nicht in ihrer Kreativität einschränken
+</p>
+
+</section>
+<section id="slide-org9e3e440">
+<h4 id="org9e3e440">Typensysteme als Gerüst</h4>
+<p>
+Typensysteme können bei der Architektur eines Programms helfen:
+</p>
+
+<ul>
+<li>Verdeutlichung/Externalisierung des Datenflusses</li>
+<li>Schnelle Interface-Prototypen ohne Implementierung</li>
+<li>Dokumentation</li>
+<li>Codierung eines Teils der Business-Logik</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orga254b48">
+<h3 id="orga254b48">Overview</h3>
+<ul>
+<li>Kotlin</li>
+<li>Etwas Theorie</li>
+<li>Λrrow Basics</li>
+<li>Typenklassen in Kotlin</li>
+<li>Beispiel</li>
+
+</ul>
+</section>
+</section>
+<section>
+<section id="slide-org174d489">
+<h3 id="org174d489">Kotlin</h3>
+<ul>
+<li>Entwickelt durch JetBrains (of IDE fame)</li>
+<li>Läuft auf JVM, super Java-Interop</li>
+<li>Sponsored by Google
+<ul>
+<li>1st Class Android-Support</li>
+
+</ul></li>
+<li>Entwickelt in 2010-2012
+<ul>
+<li>Scala war zwar toll, aber der Compiler war ihnen zu lahm 🐢</li>
+
+</ul></li>
+
+</ul>
+</section>
+<section id="slide-orgab538de">
+<h4 id="orgab538de">Warum Kotlin?</h4>
+<ul>
+<li>Wenn Euer Team sich vor Scala &amp; Clojure fürchtet…</li>
+<li>… aber Java schon zu abgestanden schmeckt</li>
+<li>Onboarding von Java-Kollegen zu Kotlin: problemlos</li>
+<li>Kotlin unterstützt FP syntaktisch besser als Java</li>
+
+</ul>
+</section>
+<section id="slide-org24d4ecc">
+<h4 id="org24d4ecc">Features</h4>
+<ul>
+<li>Kompiliert schnell 🐇</li>
+<li>1st class IDE support</li>
+<li>Einfache Value-Types (data classes)</li>
+<li>Variablendeklaration mit <code>val</code> (reference immutability)</li>
+
+</ul>
+
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">data</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Customer</span>(
+        <span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">name</span>: <span style="color: #92a65e; font-weight: bold;">String</span>,
+        <span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">email</span>: <span style="color: #92a65e; font-weight: bold;">String</span>,
+        <span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">company</span>: <span style="color: #92a65e; font-weight: bold;">String</span>)
+</code></pre>
+</div>
+</section>
+<section id="slide-orgfa6f697">
+<h4 id="orgfa6f697">Features</h4>
+<ul>
+<li>1st class Funktionen höherer Ordnung</li>
+
+</ul>
+
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">positiveNumbers</span> = list.filter { it &gt; 0 }
+
+<span style="color: #99968b;">// </span><span style="color: #99968b;">list.filter({element -&gt; element &gt; 0})</span>
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim>strings.filter { it.length == 5 }
+       .sortedBy { it }
+       .map { it.toUpperCase() }
+</code></pre>
+</div>
+
+</section>
+<section id="slide-org5b7b1e1">
+<h4 id="org5b7b1e1">Rudimentäres Pattern-Matching</h4>
+<ul>
+<li>Variablen können nach ihren Konstituenten dekonstruiert werden</li>
+
+</ul>
+
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">data</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Person</span>(<span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">age</span>: <span style="color: #92a65e; font-weight: bold;">Number</span>, <span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">name</span>: <span style="color: #92a65e; font-weight: bold;">String</span>);
+
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> <span style="color: #cae682;">printPerson</span>(a: <span style="color: #92a65e; font-weight: bold;">Person</span>) {
+    <span style="color: #8ac6f2; font-weight: bold;">val</span> (age, name) = a
+
+    println(<span style="color: #95e454;">"Meet </span><span style="color: #cae682;">${name}</span><span style="color: #95e454;">, </span><span style="color: #cae682;">${age}</span><span style="color: #95e454;"> years old."</span>)
+}
+</code></pre>
+</div>
+
+</section>
+<section id="slide-org8a50934">
+<h4 id="org8a50934">Wirklich Pattern-Matching?</h4>
+<p>
+In Wahrheit, ein schmutziger Trick:
+</p>
+
+
+<div class="figure">
+<p><img src="./trick.png" alt="trick.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-orgfb06e03">
+<h4 id="orgfb06e03">Extension Functions</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">T&gt;</span> <span style="color: #92a65e; font-weight: bold;">MutableList&lt;T&gt;.swap</span>(i: <span style="color: #92a65e; font-weight: bold;">Int</span>, j: <span style="color: #92a65e; font-weight: bold;">Int</span>) {
+    <span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">tmp</span> = <span style="color: #8ac6f2; font-weight: bold;">this</span>[i] <span style="color: #99968b;">// </span><span style="color: #99968b;">'this' corresponds to the list</span>
+    <span style="color: #8ac6f2; font-weight: bold;">this</span>[i] = <span style="color: #8ac6f2; font-weight: bold;">this</span>[j]
+    <span style="color: #8ac6f2; font-weight: bold;">this</span>[j] = tmp
+}
+
+<span style="color: #99968b;">// </span><span style="color: #99968b;">&#8230;</span>
+
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">T&gt;</span> foo(list: <span style="color: #92a65e; font-weight: bold;">MutableList&lt;T&gt;</span>) {
+    list.swap(0, 1)
+}
+</code></pre>
+</div>
+
+</section>
+<section id="slide-org7c17cbd">
+<h4 id="org7c17cbd">"Nur" syntaktischer Zucker</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">T&gt;</span> swap(me: <span style="color: #92a65e; font-weight: bold;">MutableList&lt;T&gt;</span>, i: <span style="color: #92a65e; font-weight: bold;">Int</span>, j: <span style="color: #92a65e; font-weight: bold;">Int</span>) {
+    <span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">tmp</span> = me[i]
+    me[i] = me[j]
+    me[j] = tmp
+}
+</code></pre>
+</div>
+
+</section>
+<section id="slide-orgb2f520c">
+<h4 id="orgb2f520c">Tail Call Recursion</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim>sealed <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">L&lt;out</span> <span style="color: #92a65e; font-weight: bold;">T&gt;</span> {
+    <span style="color: #8ac6f2; font-weight: bold;">object</span> <span style="color: #92a65e; font-weight: bold;">Empty</span>: <span style="color: #92a65e; font-weight: bold;">L&lt;Nothing&gt;</span>()
+    <span style="color: #8ac6f2; font-weight: bold;">data</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Cons&lt;T&gt;</span>(<span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">h</span>: <span style="color: #92a65e; font-weight: bold;">T</span>): <span style="color: #92a65e; font-weight: bold;">L&lt;T&gt;</span>()
+}
+
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> <span style="color: #92a65e; font-weight: bold;">L&lt;Int&gt;.sum</span>(): <span style="color: #92a65e; font-weight: bold;">Int</span> = add(0)
+
+<span style="color: #8ac6f2; font-weight: bold;">private</span> tailrec <span style="color: #8ac6f2; font-weight: bold;">fun</span> <span style="color: #92a65e; font-weight: bold;">L&lt;Int&gt;.add</span>(n0: <span style="color: #92a65e; font-weight: bold;">Int</span>): <span style="color: #92a65e; font-weight: bold;">Int</span> = <span style="color: #8ac6f2; font-weight: bold;">when</span> (<span style="color: #8ac6f2; font-weight: bold;">this</span>) {
+    <span style="color: #8ac6f2; font-weight: bold;">is</span> <span style="color: #92a65e; font-weight: bold;">L.Empty</span> -&gt; n0
+    <span style="color: #8ac6f2; font-weight: bold;">is</span> <span style="color: #92a65e; font-weight: bold;">L.Cons</span> -&gt; <span style="color: #8ac6f2; font-weight: bold;">this</span>.add(<span style="color: #8ac6f2; font-weight: bold;">this</span>.h)
+}
+</code></pre>
+</div>
+</section>
+<section id="slide-orgfd1cd56">
+<h4 id="orgfd1cd56"><span class="todo TODO">TODO</span> FP in Kotlin?</h4>
+<ul>
+<li>Funktionen sind niemals garantiert referentiell transparent</li>
+<li><code>var</code>-Zuweisung</li>
+<li><code>val</code>-Zuweisung funktioniert wie <code>final</code> in Java</li>
+<li>das Typensystem wird uns etwas Kopfzerbrechen bereiten…</li>
+
+</ul>
+</section>
+</section>
+<section>
+<section id="slide-org8ac9971">
+<h3 id="org8ac9971"><span class="todo TODO">TODO</span> Etwas Theorie</h3>
+<div class="outline-text-3" id="text-org8ac9971">
+</div>
+</section>
+<section id="slide-org1d0f7e4">
+<h4 id="org1d0f7e4">Was ist ein Typ?</h4>
+<p>
+Typen kann man als <b>Mengen von Werten</b> betrachten
+</p>
+<ul>
+<li><code>Int</code></li>
+
+</ul>
+<p>
+\[\{ x | x \in \mathcal{N} \} = \{ 1, 2, 3, \ldots\}\]
+</p>
+
+</section>
+<section id="slide-orgff7c851">
+<h4 id="orgff7c851">Bewohner eines Typen</h4>
+<ul>
+<li><code>enum class Colour { red, green }</code></li>
+
+</ul>
+<p>
+\[  \{ \mathrm{red}, \mathrm{green} \} \]
+</p>
+
+<ul>
+<li>Man spricht von <b>Bewohnern eines Typen</b> (Type inhabitation)</li>
+
+</ul>
+
+</section>
+<section id="slide-org49ab6cc">
+<h4 id="org49ab6cc">Spezielle Typen in Kotlin:</h4>
+<ul>
+<li><code>Any</code> wird von <i>allen Werten</i> bewohnt</li>
+<li><code>Nothing</code> wird von <i>keinem Wert</i> bewohnt</li>
+<li><code>Unit</code> hat genau einen Bewohner: <code>Unit</code></li>
+
+</ul>
+</section>
+<section id="slide-org9b653a5">
+<h4 id="org9b653a5">Algebraische Datentypen</h4>
+<p>
+Ein <b>Algebraischer Datentyp</b> ist eine Komposition aus anderen Typen.
+</p>
+
+</section>
+<section id="slide-orgeec6bfc">
+<h4 id="orgeec6bfc">Produkttypen</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">data</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Triple&lt;A</span>, <span style="color: #92a65e; font-weight: bold;">B</span>, <span style="color: #92a65e; font-weight: bold;">C&gt;</span>(<span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">a</span>: <span style="color: #92a65e; font-weight: bold;">A</span>, <span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">b</span>: <span style="color: #92a65e; font-weight: bold;">B</span>, c: <span style="color: #92a65e; font-weight: bold;">C</span>)
+</code></pre>
+</div>
+<ul>
+<li>Die <i>Anzahl an Bewohnern</i> dieses Typen ist <b>das Produkt</b> der Bewohnerzahl
+der Typen, aus denen er besteht</li>
+
+</ul>
+
+</section>
+<section id="slide-orgc95ef63">
+<h4 id="orgc95ef63">Summentypen</h4>
+<p>
+Inheritance lässt sich in Kotlin beschränken.
+</p>
+
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim>sealed <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Tree&lt;T&gt;</span> {
+  <span style="color: #8ac6f2; font-weight: bold;">data</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Leaf&lt;T&gt;</span>(<span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">t</span>: <span style="color: #92a65e; font-weight: bold;">T</span>): <span style="color: #92a65e; font-weight: bold;">Tree&lt;T&gt;</span>()
+  <span style="color: #8ac6f2; font-weight: bold;">data</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Branch&lt;T&gt;</span>(
+          <span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">l</span>: <span style="color: #92a65e; font-weight: bold;">Tree&lt;T&gt;</span>,
+          <span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">r</span>: <span style="color: #92a65e; font-weight: bold;">Tree&lt;T&gt;</span>
+  ): <span style="color: #92a65e; font-weight: bold;">Tree&lt;T&gt;</span>()
+}
+</code></pre>
+</div>
+</section>
+<section id="slide-orgfe1e870">
+<h4 id="orgfe1e870">"Pattern Matching"</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">T&gt;</span> traverse(t: <span style="color: #92a65e; font-weight: bold;">Tree&lt;T&gt;</span>): <span style="color: #92a65e; font-weight: bold;">List&lt;T&gt;</span> {
+    <span style="color: #8ac6f2; font-weight: bold;">return</span> <span style="color: #8ac6f2; font-weight: bold;">when</span> (t) {
+        <span style="color: #8ac6f2; font-weight: bold;">is</span> <span style="color: #92a65e; font-weight: bold;">Tree.Leaf</span> -&gt; listOf(t.t)
+        <span style="color: #8ac6f2; font-weight: bold;">is</span> <span style="color: #92a65e; font-weight: bold;">Tree.Branch</span> -&gt; traverse(t.l) + traverse(t.r)
+    }
+}
+</code></pre>
+</div>
+</section>
+<section id="slide-org668cfff">
+<h4 id="org668cfff"><span class="todo TODO">TODO</span> λ-Kalkül</h4>
+<p>
+Rework this section. Needs to have a more formal introduction to have the actual rules
+</p>
+<p>
+Abstraktion:
+</p>
+
+<p>
+\[ f = 42 + (27 * 42) \]
+\[ f' = \lambda x. x + (27 * x) \]
+\[ f'' = \lambda x. \lambda y. x + (y * x) \]
+</p>
+
+</section>
+<section id="slide-org668cfff-split">
+<p>
+Konversion:
+\[ f''(12) = \lambda y. 12 + (y * 12) \]
+\[ f''(12)(2) = 12 + (2 * 12) = 36\]
+</p>
+</section>
+<section id="slide-org48fb1f7">
+<h4 id="org48fb1f7">Type Functions</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">A</span>, <span style="color: #92a65e; font-weight: bold;">B</span>, <span style="color: #92a65e; font-weight: bold;">C&gt;</span> ((<span style="color: #92a65e; font-weight: bold;">B</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">C</span>)
+        .compose(f: (<span style="color: #92a65e; font-weight: bold;">A</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">B</span>): (<span style="color: #92a65e; font-weight: bold;">A</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">C</span> = { <span style="color: #8ac6f2; font-weight: bold;">this</span>(f(it)) }
+
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> <span style="color: #92a65e; font-weight: bold;">List&lt;Int&gt;.sum</span>(): <span style="color: #92a65e; font-weight: bold;">Int</span> = <span style="color: #92a65e; font-weight: bold;">TODO</span>()
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> <span style="color: #92a65e; font-weight: bold;">List&lt;String&gt;.parse</span>(): <span style="color: #92a65e; font-weight: bold;">List&lt;Int&gt;</span> = <span style="color: #92a65e; font-weight: bold;">TODO</span>()
+
+<span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">parseAndSum</span> = <span style="color: #92a65e; font-weight: bold;">List&lt;Int&gt;</span>::sum
+<span style="color: #99968b;">// </span><span style="color: #99968b;">(&#955;A.B.C. ((B) -&gt; C).compose(f: (A) -&gt; B): (A) -&gt; C)</span>
+<span style="color: #99968b;">//                      </span><span style="color: #99968b;">(List&lt;String&gt;) (List&lt;Int&gt;) (Int)</span>
+    .compose&lt;<span style="color: #92a65e; font-weight: bold;">List&lt;String&gt;</span>, <span style="color: #92a65e; font-weight: bold;">List&lt;Int&gt;</span>, <span style="color: #92a65e; font-weight: bold;">Int&gt;</span>(
+        <span style="color: #92a65e; font-weight: bold;">List&lt;String&gt;</span>::parse)
+
+<span style="color: #99968b;">// </span><span style="color: #99968b;">((List&lt;String&gt;) -&gt; List&lt;Int&gt;)</span>
+<span style="color: #99968b;">//  </span><span style="color: #99968b;">.compose(f: (List&lt;Int&gt;) -&gt; Int): (List&lt;String&gt;) -&gt; Int</span>
+</code></pre>
+</div>
+</section>
+<section id="slide-orgc90a179">
+<h4 id="orgc90a179">Typen und Arten</h4>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Type</th>
+<th scope="col" class="org-left">Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>Int</code>, <code>String</code>, <code>Object</code></td>
+<td class="org-left"><code>*</code></td>
+</tr>
+
+<tr>
+<td class="org-left">List&lt;A&gt;, Maybe&lt;A&gt;</td>
+<td class="org-left"><code>* → *</code></td>
+</tr>
+
+<tr>
+<td class="org-left">List&lt;Int&gt;, Maybe&lt;Object&gt;</td>
+<td class="org-left"><code>* → *</code></td>
+</tr>
+
+<tr>
+<td class="org-left">List&lt;Maybe&lt;T&gt;&gt;</td>
+<td class="org-left"><code>* → *</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="slide-orga013560">
+<h4 id="orga013560"><span class="todo TODO">TODO</span> Aufgabe:</h4>
+<ul class="fragment roll-in">
+<li><code>fun λF.A.B. F&lt;A&gt; → ((a) → b) → F&lt;B&gt;</code></li>
+<li>Kind von <code>A</code>, <code>B</code>?</li>
+<li>Kind von <code>F</code>?</li>
+
+</ul>
+
+<ul class="fragment roll-in">
+<li><code>(* → *) → *</code></li>
+<li>Nach welcher Funktion sieht es aus?</li>
+
+</ul>
+
+<ul class="fragment roll-in">
+<li>Wie muss <code>F</code> aussehen, damit <code>map</code> funktioniert?</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org41e6df2">
+<h3 id="org41e6df2"><span class="todo TODO">TODO</span> Λrrow-kt Basics</h3>
+<div class="outline-text-3" id="text-org41e6df2">
+</div>
+</section>
+<section id="slide-org38b963d">
+<h4 id="org38b963d">Data types</h4>
+<ul>
+<li>Operationen auf Datentypen manipulieren nur den Datentyp selbst, nicht sein generisches Argument</li>
+<li>Beispiele:
+<ul>
+<li><code>Option</code> Monad, wie <code>∀a. Maybe a</code> in Haskell</li>
+<li><code>Either</code> Monad</li>
+<li><code>Validated</code> Applicative, Aggregation von Validierung und Fehlerwerten</li>
+
+</ul></li>
+
+</ul>
+</section>
+<section id="slide-org5952146">
+<h4 id="org5952146"><span class="todo TODO">TODO</span> Error-Handling &amp; ROP</h4>
+</section>
+<section id="slide-org7e54e6a">
+<h4 id="org7e54e6a"><span class="todo TODO">TODO</span> Optics/Lenses</h4>
+</section>
+<section id="slide-org715d213">
+<h4 id="org715d213"><span class="todo TODO">TODO</span> Extension Functions</h4>
+</section>
+</section>
+<section>
+<section id="slide-org196bf50">
+<h3 id="org196bf50"><span class="todo TODO">TODO</span> Typenklassen</h3>
+<div class="outline-text-3" id="text-org196bf50">
+</div>
+</section>
+<section id="slide-org1c1dec0">
+<h4 id="org1c1dec0">Typenklassen</h4>
+<p>
+Eine <b>Typenklasse</b> (type class) <code>T a</code> definiert eine Reihe von <b>Funktionen</b> über einen Wert vom Typ <code>a</code>.
+</p>
+
+<p>
+Typenklassen abstrahieren über <i>ad hoc polymorphism</i>, auch <i>overloading</i>.
+</p>
+</section>
+<section id="slide-org1b9c6d5">
+<h4 id="org1b9c6d5">Haskell-Beispiel</h4>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><code trim><span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Equality</span> a <span style="color: #8ac6f2; font-weight: bold;">where</span>
+  equals <span style="color: #cae682;">::</span> a <span style="color: #cae682;">-&gt;</span> a <span style="color: #cae682;">-&gt;</span> <span style="color: #92a65e; font-weight: bold;">Bool</span>
+
+<span style="color: #8ac6f2; font-weight: bold;">instance</span> (<span style="color: #92a65e; font-weight: bold;">Equality</span> a) <span style="color: #cae682;">=&gt;</span> <span style="color: #92a65e; font-weight: bold;">Equality</span> ([a]) <span style="color: #8ac6f2; font-weight: bold;">where</span>
+  equals <span style="color: #92a65e; font-weight: bold;">[]</span> <span style="color: #92a65e; font-weight: bold;">[]</span> <span style="color: #cae682;">=</span> <span style="color: #92a65e; font-weight: bold;">True</span>
+  equals <span style="color: #92a65e; font-weight: bold;">[]</span> <span style="color: #8ac6f2; font-weight: bold;">_</span> <span style="color: #cae682;">=</span> <span style="color: #92a65e; font-weight: bold;">False</span>
+  equals <span style="color: #8ac6f2; font-weight: bold;">_</span> <span style="color: #92a65e; font-weight: bold;">[]</span> <span style="color: #cae682;">=</span> <span style="color: #92a65e; font-weight: bold;">False</span>
+  equals (x<span style="color: #92a65e; font-weight: bold;">:</span>xs) (y<span style="color: #92a65e; font-weight: bold;">:</span>ys) <span style="color: #cae682;">=</span> equals x y <span style="color: #cae682;">&amp;&amp;</span> equals xs ys
+</code></pre>
+</div>
+</section>
+<section id="slide-org7abc642">
+<h4 id="org7abc642">Beispiele für Typenklassen</h4>
+<p>
+Grundsätzlich unterscheiden wir
+</p>
+
+<ul>
+<li>value-Typenklassen:
+<ul>
+<li><code>Ord</code>, <code>Num</code>, <code>Show</code>, …</li>
+
+</ul></li>
+<li>type constructor-Typenklassen
+<ul>
+<li><code>Functor</code>, <code>Monoid</code>, <code>Applicative</code>, <code>Monad</code>, …</li>
+
+</ul></li>
+
+</ul>
+</section>
+<section id="slide-orgffab972">
+<h4 id="orgffab972">Wie funktionieren Typenklassen während des Kompiliervorgangs?</h4>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><code trim><span style="color: #cae682;">sort</span> <span style="color: #cae682;">::</span> <span style="color: #92a65e; font-weight: bold;">Ord</span> a <span style="color: #cae682;">=&gt;</span> [a] <span style="color: #cae682;">-&gt;</span> [a]
+<span style="color: #cae682;">reverse</span> <span style="color: #cae682;">::</span> [a] <span style="color: #cae682;">-&gt;</span> [a]
+
+<span style="color: #cae682;">f</span> <span style="color: #cae682;">::</span> (<span style="color: #92a65e; font-weight: bold;">Ord</span> a) <span style="color: #cae682;">=&gt;</span> [a] <span style="color: #cae682;">-&gt;</span>[a]
+<span style="color: #cae682;">f</span> l <span style="color: #cae682;">=</span> (reverse <span style="color: #cae682;">.</span> sort) l
+
+<span style="color: #cae682;">main</span> <span style="color: #cae682;">=</span> print <span style="color: #cae682;">$</span> f [1,2,3]
+</code></pre>
+</div>
+
+</section>
+<section id="slide-orgffab972-split">
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><code trim><span style="color: #8ac6f2; font-weight: bold;">class</span> (<span style="color: #92a65e; font-weight: bold;">Eq</span> a) <span style="color: #cae682;">=&gt;</span> <span style="color: #92a65e; font-weight: bold;">Ord</span> a <span style="color: #8ac6f2; font-weight: bold;">where</span>
+  compare<span style="color: #cae682;">::</span> a <span style="color: #cae682;">-&gt;</span> a <span style="color: #cae682;">-&gt;</span> <span style="color: #92a65e; font-weight: bold;">Ordering</span>
+
+<span style="color: #8ac6f2; font-weight: bold;">instance</span> (<span style="color: #92a65e; font-weight: bold;">Eq</span> a) <span style="color: #cae682;">=&gt;</span> <span style="color: #92a65e; font-weight: bold;">Ord</span> <span style="color: #92a65e; font-weight: bold;">Int</span> <span style="color: #8ac6f2; font-weight: bold;">where</span>
+  compare a b <span style="color: #cae682;">=</span> <span style="color: #99968b;">-- </span><span style="color: #99968b;">&#8230;</span>
+</code></pre>
+</div>
+
+</section>
+<section id="slide-orgffab972-split">
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><code trim><span style="color: #cae682;">sort</span> <span style="color: #cae682;">::</span> <span style="color: #92a65e; font-weight: bold;">Ord</span> a <span style="color: #cae682;">=&gt;</span> [a] <span style="color: #cae682;">-&gt;</span> [a]
+<span style="color: #cae682;">reverse</span> <span style="color: #cae682;">::</span> [a] <span style="color: #cae682;">-&gt;</span> [a]
+
+<span style="color: #cae682;">f</span> <span style="color: #cae682;">::</span> (<span style="color: #92a65e; font-weight: bold;">Ord</span> a) <span style="color: #cae682;">=&gt;</span> [a] <span style="color: #cae682;">-&gt;</span>[a]
+<span style="color: #cae682;">f</span> l <span style="color: #cae682;">=</span> (&#955;d<span style="color: #92a65e; font-weight: bold;">:Ord</span> a) (reverse <span style="color: #cae682;">.</span> sort d) l
+</code></pre>
+</div>
+
+<ul>
+<li><code>d</code> Verzeichnis aller Instanzen von <code>compare</code></li>
+<li><code>d</code> wird vom Compiler injiziert</li>
+
+</ul>
+</section>
+<section id="slide-org316a9f3">
+<h4 id="org316a9f3">Warum kann Kotlin keine Higher-Order Typenklassen haben?</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">A&gt;</span> f(l: <span style="color: #92a65e; font-weight: bold;">List&lt;Maybe&lt;A&gt;&gt;</span>): <span style="color: #92a65e; font-weight: bold;">List&lt;A&gt;</span> <span style="color: #99968b;">// </span><span style="color: #99968b;">valid!</span>
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">A</span>, <span style="color: #92a65e; font-weight: bold;">B&gt;</span> map(l: <span style="color: #92a65e; font-weight: bold;">List&lt;A&gt;</span>, f: (<span style="color: #92a65e; font-weight: bold;">A</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">B</span>): <span style="color: #92a65e; font-weight: bold;">List&lt;B&gt;</span> <span style="color: #99968b;">//</span><span style="color: #99968b;">valid!</span>
+</code></pre>
+</div>
+
+<ul>
+<li>Abstrakter Typ <code>A</code> hat Kind <code>*</code>.</li>
+<li>Konkrete Typen <code>List</code> und <code>Maybe</code> haben Kind <code>* → *</code> (Type Constructor)</li>
+
+</ul>
+
+</section>
+<section id="slide-orgbcd49d1">
+<h4 id="orgbcd49d1">Typenkonstruktoren können nicht generisch sein!</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">F</span>, <span style="color: #92a65e; font-weight: bold;">A</span>, <span style="color: #92a65e; font-weight: bold;">B&gt;</span> map(l: <span style="color: #92a65e; font-weight: bold;">F&lt;A&gt;</span>, f: (<span style="color: #92a65e; font-weight: bold;">A</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">B</span>): <span style="color: #92a65e; font-weight: bold;">F&lt;B&gt;</span> <span style="color: #99968b;">// </span><span style="color: #99968b;">invalid!</span>
+</code></pre>
+</div>
+
+<ul>
+<li>Kotlin Generics <b>müssen</b> von Kind <code>*</code> sein!</li>
+<li>Wir können nicht über Typen vom Kind <code>* → *</code> abstrahieren!</li>
+
+</ul>
+</section>
+<section id="slide-org03d73a4">
+<h4 id="org03d73a4">Type-Classes für Werte</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">interface</span> <span style="color: #92a65e; font-weight: bold;">Eqty&lt;T&gt;</span> {
+    <span style="color: #8ac6f2; font-weight: bold;">fun</span> <span style="color: #cae682;">eq</span>(a: <span style="color: #92a65e; font-weight: bold;">T</span>, b: <span style="color: #92a65e; font-weight: bold;">T</span>): <span style="color: #92a65e; font-weight: bold;">Boolean</span>
+}
+
+<span style="color: #8ac6f2; font-weight: bold;">object</span> <span style="color: #92a65e; font-weight: bold;">StringEqtyInstance</span> : <span style="color: #92a65e; font-weight: bold;">Eqty&lt;String&gt;</span> {
+    <span style="color: #8ac6f2; font-weight: bold;">override</span> <span style="color: #8ac6f2; font-weight: bold;">fun</span> <span style="color: #cae682;">eq</span>(a: <span style="color: #92a65e; font-weight: bold;">String</span>, b: <span style="color: #92a65e; font-weight: bold;">String</span>): <span style="color: #92a65e; font-weight: bold;">Boolean</span>
+            = a.toLowerCase() == b.toLowerCase()
+}
+
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">T&gt;</span> <span style="color: #92a65e; font-weight: bold;">List&lt;T&gt;.find</span>(t: <span style="color: #92a65e; font-weight: bold;">T</span>, eqty: <span style="color: #92a65e; font-weight: bold;">Eqty&lt;T&gt;</span>): <span style="color: #92a65e; font-weight: bold;">List&lt;T&gt;</span>
+        = flatMap { eqty.run {
+    <span style="color: #8ac6f2; font-weight: bold;">if</span> (eq(t, it)) listOf(it) <span style="color: #8ac6f2; font-weight: bold;">else</span> listOf() }
+}
+
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> <span style="color: #cae682;">fooList</span>(l: <span style="color: #92a65e; font-weight: bold;">List&lt;String&gt;</span>)
+   = l.find(<span style="color: #95e454;">"FOO"</span>, <span style="color: #92a65e; font-weight: bold;">StringEqtyInstance</span>)
+</code></pre>
+</div>
+</section>
+<section id="slide-org5b0bbe5">
+<h4 id="org5b0bbe5">… und Higher-Kinded Types</h4>
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim>sealed <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Maybe&lt;out</span> <span style="color: #92a65e; font-weight: bold;">T&gt;</span> {
+    <span style="color: #8ac6f2; font-weight: bold;">object</span> <span style="color: #92a65e; font-weight: bold;">No</span>: <span style="color: #92a65e; font-weight: bold;">Maybe&lt;Nothing&gt;</span>()
+    <span style="color: #8ac6f2; font-weight: bold;">data</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Yes&lt;T&gt;</span>(<span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">just</span>: <span style="color: #92a65e; font-weight: bold;">T</span>): <span style="color: #92a65e; font-weight: bold;">Maybe&lt;T&gt;</span>()
+
+    <span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">B&gt;</span> map(f: (<span style="color: #92a65e; font-weight: bold;">T</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">B</span>): <span style="color: #92a65e; font-weight: bold;">MaybeOf&lt;B&gt;</span> = <span style="color: #8ac6f2; font-weight: bold;">when</span> (<span style="color: #8ac6f2; font-weight: bold;">this</span>) {
+        <span style="color: #8ac6f2; font-weight: bold;">is</span> <span style="color: #92a65e; font-weight: bold;">No</span> -&gt; <span style="color: #92a65e; font-weight: bold;">No</span>
+        <span style="color: #8ac6f2; font-weight: bold;">is</span> <span style="color: #92a65e; font-weight: bold;">Yes</span> -&gt; <span style="color: #92a65e; font-weight: bold;">Yes</span>(f(just))
+    }
+}
+</code></pre>
+</div>
+
+</section>
+<section id="slide-org5b0bbe5-split">
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">interface</span> <span style="color: #92a65e; font-weight: bold;">Functor&lt;F&gt;</span> {
+    <span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">A</span>, <span style="color: #92a65e; font-weight: bold;">B&gt;</span> <span style="color: #92a65e; font-weight: bold;">F&lt;A&gt;.map</span>(f: (<span style="color: #92a65e; font-weight: bold;">A</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">B</span>): <span style="color: #92a65e; font-weight: bold;">F&lt;B&gt;</span>
+}
+</code></pre>
+</div>
+
+</section>
+<section id="slide-org5b0bbe5-split">
+<div class="org-src-container">
+
+<pre  class="src src-kotlin"><code trim><span style="color: #8ac6f2; font-weight: bold;">interface</span> <span style="color: #92a65e; font-weight: bold;">Functor&lt;F&gt;</span> {
+    <span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">A</span>, <span style="color: #92a65e; font-weight: bold;">B&gt;</span> <span style="color: #92a65e; font-weight: bold;">Kind&lt;F</span>, <span style="color: #92a65e; font-weight: bold;">A&gt;.map</span>(f: (<span style="color: #92a65e; font-weight: bold;">A</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">B</span>): <span style="color: #92a65e; font-weight: bold;">Kind&lt;F</span>, <span style="color: #92a65e; font-weight: bold;">B&gt;</span>
+}
+
+<span style="color: #8ac6f2; font-weight: bold;">interface</span> <span style="color: #92a65e; font-weight: bold;">Kind&lt;out</span> <span style="color: #92a65e; font-weight: bold;">F</span>, <span style="color: #8ac6f2; font-weight: bold;">out</span> <span style="color: #92a65e; font-weight: bold;">A&gt;</span>
+<span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">ForMaybe</span> <span style="color: #8ac6f2; font-weight: bold;">private</span> <span style="color: #8ac6f2; font-weight: bold;">constructor</span>()
+<span style="color: #8ac6f2; font-weight: bold;">typealias</span> <span style="color: #92a65e; font-weight: bold;">MaybeOf&lt;T&gt;</span> = <span style="color: #92a65e; font-weight: bold;">Kind&lt;ForMaybe</span>, <span style="color: #92a65e; font-weight: bold;">T&gt;</span>
+
+sealed <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Maybe&lt;out</span> <span style="color: #92a65e; font-weight: bold;">T&gt;</span> : <span style="color: #92a65e; font-weight: bold;">MaybeOf&lt;T&gt;</span> {
+    <span style="color: #8ac6f2; font-weight: bold;">object</span> <span style="color: #92a65e; font-weight: bold;">No</span>: <span style="color: #92a65e; font-weight: bold;">Maybe&lt;Nothing&gt;</span>()
+    <span style="color: #8ac6f2; font-weight: bold;">data</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">Yes&lt;T&gt;</span>(<span style="color: #8ac6f2; font-weight: bold;">val</span> <span style="color: #cae682;">just</span>: <span style="color: #92a65e; font-weight: bold;">T</span>): <span style="color: #92a65e; font-weight: bold;">Maybe&lt;T&gt;</span>()
+
+    <span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">B&gt;</span> map(f: (<span style="color: #92a65e; font-weight: bold;">T</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">B</span>): <span style="color: #92a65e; font-weight: bold;">MaybeOf&lt;B&gt;</span> = <span style="color: #8ac6f2; font-weight: bold;">when</span> (<span style="color: #8ac6f2; font-weight: bold;">this</span>) {
+        <span style="color: #8ac6f2; font-weight: bold;">is</span> <span style="color: #92a65e; font-weight: bold;">No</span> -&gt; <span style="color: #92a65e; font-weight: bold;">No</span>
+        <span style="color: #8ac6f2; font-weight: bold;">is</span> <span style="color: #92a65e; font-weight: bold;">Yes</span> -&gt; <span style="color: #92a65e; font-weight: bold;">Yes</span>(f(just))
+    }
+
+    <span style="color: #8ac6f2; font-weight: bold;">companion</span> <span style="color: #8ac6f2; font-weight: bold;">object</span>
+}
+
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">A&gt;</span> <span style="color: #92a65e; font-weight: bold;">MaybeOf&lt;A&gt;.fix</span>(): <span style="color: #92a65e; font-weight: bold;">Maybe&lt;A&gt;</span> = <span style="color: #8ac6f2; font-weight: bold;">this</span> <span style="color: #8ac6f2; font-weight: bold;">as</span> <span style="color: #92a65e; font-weight: bold;">Maybe&lt;A&gt;</span> <span style="color: #99968b;">// </span><span style="color: #99968b;">&#128561;</span>
+<span style="color: #8ac6f2; font-weight: bold;">interface</span> <span style="color: #92a65e; font-weight: bold;">MaybeFunctorInstance</span> : <span style="color: #92a65e; font-weight: bold;">Functor&lt;ForMaybe&gt;</span> {
+    <span style="color: #8ac6f2; font-weight: bold;">override</span> <span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">A</span>, <span style="color: #92a65e; font-weight: bold;">B&gt;</span> <span style="color: #92a65e; font-weight: bold;">Kind&lt;ForMaybe</span>, <span style="color: #92a65e; font-weight: bold;">A&gt;</span>
+        .map(f: (<span style="color: #92a65e; font-weight: bold;">A</span>) -&gt; <span style="color: #92a65e; font-weight: bold;">B</span>): <span style="color: #92a65e; font-weight: bold;">Kind&lt;ForMaybe</span>, <span style="color: #92a65e; font-weight: bold;">B&gt;</span> {
+        <span style="color: #8ac6f2; font-weight: bold;">return</span> fix().map { f(it) }
+    }
+}
+
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> <span style="color: #92a65e; font-weight: bold;">Maybe.Companion.functor</span>(): <span style="color: #92a65e; font-weight: bold;">MaybeFunctorInstance</span>
+  = <span style="color: #8ac6f2; font-weight: bold;">object</span> : <span style="color: #92a65e; font-weight: bold;">MaybeFunctorInstance</span> { }
+
+<span style="color: #8ac6f2; font-weight: bold;">fun</span> &lt;<span style="color: #92a65e; font-weight: bold;">F&gt;</span> incrementAll(
+   f: <span style="color: #92a65e; font-weight: bold;">Functor&lt;F&gt;</span>,
+   a: <span style="color: #92a65e; font-weight: bold;">Kind&lt;F</span>, <span style="color: #92a65e; font-weight: bold;">Int&gt;</span>
+): <span style="color: #92a65e; font-weight: bold;">Kind&lt;F</span>, <span style="color: #92a65e; font-weight: bold;">Int&gt;</span> = f.run { a.map { it + 1 } }
+
+incrementAll(<span style="color: #92a65e; font-weight: bold;">Maybe.functor</span>(), <span style="color: #92a65e; font-weight: bold;">Maybe.Yes</span>(1)).fix() <span style="color: #99968b;">// </span><span style="color: #99968b;">just 2</span>
+incrementAll(<span style="color: #92a65e; font-weight: bold;">Maybe.functor</span>(), <span style="color: #92a65e; font-weight: bold;">Maybe.No</span>).fix() <span style="color: #99968b;">// </span><span style="color: #99968b;">No</span>
+</code></pre>
+</div>
+</section>
+<section id="slide-orgaed1667">
+<h4 id="orgaed1667"><span class="todo TODO">TODO</span> Monad Comprehensions</h4>
+</section>
+</section>
+<section>
+<section id="slide-org9f581d3">
+<h3 id="org9f581d3"><span class="todo TODO">TODO</span> Beispiel</h3>
+<p>
+Created: <span class="timestamp-wrapper"><span class="timestamp">[2019-08-29 Do 22:12]</span></span>
+Ref: notes.org <a href="file:///home/aleks/var/seafile/Seafile/itdesign/fp-workshop/notes.html#MissingReference">Random:</a>
+</p>
+
+<ul>
+<li>we want to create a program that retrieves some data from somewhere, somehow</li>
+<li>it manipulates that data in some way</li>
+<li>it retrieves more data from a second source</li>
+<li>it then manipulates those two sets of data to produce a composite</li>
+<li>it returns that composite</li>
+
+</ul>
+
+<p>
+ok, great, but where's the data source? What happens when retrieval
+doesn't go as planned. (Advanced: can we parallelize retrieval, or do
+we need to depend on the first call to know the second one?)
+</p>
+
+<p>
+The example could be skills creation: we get a list of strings. Get
+all the skills, get the matching ids. Also the strings (skill names)
+that didn't match. Then create new entries for each of these strings
+(bonus points: in parallel), get their ids. Join the lists (bonus
+points: in the original order) and execute a last request to write the
+new list.
+</p>
+
+<p>
+Some inspiration:
+</p>
+<ul>
+<li><a href="https://github.com/dcampogiani/polyjokes/blob/master/README.md">https://github.com/dcampogiani/polyjokes/blob/master/README.md</a></li>
+
+</ul>
+</section>
+</section>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js@3.8.0/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+});
+</script>
+</body>
+</html>

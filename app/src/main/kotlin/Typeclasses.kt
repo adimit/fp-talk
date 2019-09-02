@@ -1,3 +1,6 @@
+import arrow.extension
+import arrow.higherkind
+
 /**
  * @author Aleksandar Dimitrov
  * @since  2019-09-01
@@ -54,3 +57,4 @@ fun <F> incrementAll(f: Functor<F>, a: Kind<F, Int>): Kind<F, Int> = f.run {
 
 val foo: Maybe<Int> = incrementAll(Maybe.functor(), Maybe.Yes(1)).fix() // just 2
 val bar: Maybe<Int> = incrementAll(Maybe.functor(), Maybe.No).fix() // No
+
