@@ -83,6 +83,38 @@ Parametric types? Another argument to your function (think reified
 types.) Type classes? Yet another argument to your function, namely
 the implementation of the type class.
 
+* Graveyard                                                        :noexport:
+** Wie funktionieren Typenklassen während des Kompiliervorgangs?
+#+BEGIN_SRC haskell
+  sort :: Ord a => [a] -> [a]
+  reverse :: [a] -> [a]
+
+  f :: (Ord a) => [a] ->[a]
+  f l = (reverse . sort) l
+
+  main = print $ f [1,2,3]
+#+END_SRC
+
+#+REVEAL: split
+#+BEGIN_SRC haskell
+  class (Eq a) => Ord a where
+    compare:: a -> a -> Ordering
+
+  instance (Eq a) => Ord Int where
+    compare a b = -- …
+#+END_SRC
+
+#+REVEAL: split
+#+BEGIN_SRC haskell
+  sort :: Ord a => [a] -> [a]
+  reverse :: [a] -> [a]
+
+  f :: (Ord a) => [a] ->[a]
+  f l = (λd:Ord a) (reverse . sort d) l
+#+END_SRC
+
+- =d= Verzeichnis aller Instanzen von =compare=
+- =d= wird vom Compiler injiziert
 * Talk
 ** TODO Einführung
 *** TODO Über mich
@@ -323,14 +355,36 @@ $$ f''(12)(2) = 12 + (2 * 12) = 36$$
 
 ** TODO Λrrow-kt Basics
 *** Data types
-- Operationen auf Datentypen manipulieren nur den Datentyp selbst, nicht sein generisches Argument
-- Beispiele:
-  - =Option= Monad, wie =∀a. Maybe a= in Haskell
-  - =Either= Monad
-  - =Validated= Applicative, Aggregation von Validierung und Fehlerwerten
-*** TODO Error-Handling & ROP
-*** TODO Optics/Lenses
-*** TODO Extension Functions
+Operationen auf Datentypen manipulieren nur den Datentyp selbst, nicht sein generisches Argument
+
+#+ATTR_REVEAL: :frag roll-in
+=Option=, =Either=, ...
+*** Either für Exceptions
+#+BEGIN_SRC kotlin
+  sealed class Try<out T> {
+     data class Failure(val e: Throwable) : Try<Nothing>()
+     data class Success(val v: T) :Try<T>()
+
+     //...
+  }
+
+  val dangerous = Try { throwsAnException() }
+  // dangerous = Failure(e=...)
+
+#+END_SRC
+*** Validierung
+#+BEGIN_SRC kotlin
+  sealed class Validated<out E, out A> {
+      data class Valid<out A>(val a: A) : Validated<Nothing, A>()
+      data class Invalid<out E>(val e: E) : Validated<E, Nothing>()
+  }
+
+  fun parse(string: String): Validated<ErrorType, ValueType> = TODO()
+#+END_SRC
+
+Erlaubt /sequentielle/ und /parallele/ Validierung
+*** Optics/Lenses
+Immutable Value Types sind oft schwierig zu manipulieren
 ** TODO Typenklassen
 *** Typenklassen
 Eine *Typenklasse* (type class) =T a= definiert eine Reihe von *Funktionen* über einen Wert vom Typ =a=.
@@ -351,40 +405,56 @@ Typenklassen abstrahieren über /ad hoc polymorphism/, auch /overloading/.
 Grundsätzlich unterscheiden wir
 
 - value-Typenklassen:
-  - =Ord=, =Num=, =Show=, …
+  - =Eq=, =Ord=, =Num=, =Show=, …
 - type constructor-Typenklassen
   - =Functor=, =Monoid=, =Applicative=, =Monad=, …
-*** Wie funktionieren Typenklassen während des Kompiliervorgangs?
-#+BEGIN_SRC haskell
-  sort :: Ord a => [a] -> [a]
-  reverse :: [a] -> [a]
+*** Wunschkonzert
+#+BEGIN_SRC kotlin
+  type interface Eq<A> {
+      fun A.eq(b: A): Boolean
+  }
 
-  f :: (Ord a) => [a] ->[a]
-  f l = (reverse . sort) l
+  instance Eq<String> {
+      override fun String.eq(b: String)
+        = this.toLowerCase() == b.toLowerCase()
+  }
 
-  main = print $ f [1,2,3]
+  fun <T: Eq> List<T>.filter(like: T): List<T> = TODO()
 #+END_SRC
+*** Type-Classes für Werte
+#+BEGIN_SRC kotlin
+  interface Eqty<A> {
+      fun A.eq(b: A): Boolean
+  }
 
-#+REVEAL: split
-#+BEGIN_SRC haskell
-  class (Eq a) => Ord a where
-    compare:: a -> a -> Ordering
+  object StringEqtyInstance : Eqty<String> {
+      override fun String.eq(b: String): Boolean
+              = this.toLowerCase() == b.toLowerCase()
+  }
 
-  instance (Eq a) => Ord Int where
-    compare a b = -- …
+  fun <T> List<T>.filter(t: T, eqty: Eqty<T>): List<T>
+          = flatMap { eqty.run {
+      if (it.eq(t)) listOf(it) else listOf() }
+  }
+
+  val fooList = listOf("foo", "fOo", "bar")
+           .find("FOO", StringEqtyInstance)
+  // ["foo", "fOo"]
 #+END_SRC
+*** Lauteres Wunschkonzert
+#+BEGIN_SRC kotlin
+  type interface Functor<F> {
+      fun <A, B> F<A>.fmap(f: (A) -> B): F<B>
+  }
 
-#+REVEAL: split
-#+BEGIN_SRC haskell
-  sort :: Ord a => [a] -> [a]
-  reverse :: [a] -> [a]
+  instance Functor<List> {
+      override fun <A, B> List<A>
+              .fmap(f: (A) -> B): List<B> = this.map(f)
+  }
 
-  f :: (Ord a) => [a] ->[a]
-  f l = (λd:Ord a) (reverse . sort d) l
+  fun <F> parseInt(intf: F<Int>): F<String> =
+      intf.fmap { it.toString() }
 #+END_SRC
-
-- =d= Verzeichnis aller Instanzen von =compare=
-- =d= wird vom Compiler injiziert
 *** Warum kann Kotlin keine Higher-Order Typenklassen haben?
 
 #+BEGIN_SRC kotlin
@@ -403,27 +473,39 @@ Grundsätzlich unterscheiden wir
 
 - Kotlin Generics *müssen* von Kind =*= sein!
 - Wir können nicht über Typen vom Kind =* → *= abstrahieren!
-*** Type-Classes für Werte
+*** Lösung: Defunctionalisation!
+Aus
+
 #+BEGIN_SRC kotlin
-  interface Eqty<T> {
-      fun eq(a: T, b: T): Boolean
-  }
-
-  object StringEqtyInstance : Eqty<String> {
-      override fun eq(a: String, b: String): Boolean
-              = a.toLowerCase() == b.toLowerCase()
-  }
-
-  fun <T> List<T>.find(t: T, eqty: Eqty<T>): List<T>
-          = flatMap { eqty.run {
-      if (eq(t, it)) listOf(it) else listOf() }
-  }
-
-  fun fooList(l: List<String>)
-     = l.find("FOO", StringEqtyInstance)
+  F<A>
 #+END_SRC
-*** … und Higher-Kinded Types
+
+wird
+
 #+BEGIN_SRC kotlin
+  interface Kind<out F, out A>
+#+END_SRC
+
+*** Funktor die Zweite
+#+BEGIN_SRC kotlin
+  interface Functor<F> {
+      fun <A, B> F<A>.map(f: (A) -> B): F<B>
+  }
+#+END_SRC
+
+mit Kind-Proxy:
+
+#+BEGIN_SRC kotlin
+  interface Functor<F> {
+      fun <A, B> Kind<F, A>.map(f: (A) -> B): Kind<F, B>
+  }
+#+END_SRC
+
+*** Ein Beispiel
+#+BEGIN_SRC kotlin
+  class ForMaybe private constructor()
+  typealias MaybeOf<T> = Kind<ForMaybe, T>
+
   sealed class Maybe<out T> {
       object No: Maybe<Nothing>()
       data class Yes<T>(val just: T): Maybe<T>()
@@ -432,39 +514,14 @@ Grundsätzlich unterscheiden wir
           is No -> No
           is Yes -> Yes(f(just))
       }
-  }
-#+END_SRC
-
-#+REVEAL: split
-#+BEGIN_SRC kotlin
-  interface Functor<F> {
-      fun <A, B> F<A>.map(f: (A) -> B): F<B>
-  }
-#+END_SRC
-
-#+REVEAL: split
-#+BEGIN_SRC kotlin
-  interface Functor<F> {
-      fun <A, B> Kind<F, A>.map(f: (A) -> B): Kind<F, B>
-  }
-
-  interface Kind<out F, out A>
-  class ForMaybe private constructor()
-  typealias MaybeOf<T> = Kind<ForMaybe, T>
-
-  sealed class Maybe<out T> : MaybeOf<T> {
-      object No: Maybe<Nothing>()
-      data class Yes<T>(val just: T): Maybe<T>()
-
-      fun <B> map(f: (T) -> B): MaybeOf<B> = when (this) {
-          is No -> No
-          is Yes -> Yes(f(just))
-      }
-
       companion object
   }
 
   fun <A> MaybeOf<A>.fix(): Maybe<A> = this as Maybe<A> // 😱
+#+END_SRC
+
+*** Funktor-Instanz auf Kotlin
+#+BEGIN_SRC kotlin
   interface MaybeFunctorInstance : Functor<ForMaybe> {
       override fun <A, B> Kind<ForMaybe, A>
           .map(f: (A) -> B): Kind<ForMaybe, B> {
@@ -474,7 +531,10 @@ Grundsätzlich unterscheiden wir
 
   fun Maybe.Companion.functor(): MaybeFunctorInstance
     = object : MaybeFunctorInstance { }
+#+END_SRC
 
+*** Funktoren in Aktion
+#+BEGIN_SRC kotlin
   fun <F> incrementAll(
      f: Functor<F>,
      a: Kind<F, Int>
@@ -483,8 +543,24 @@ Grundsätzlich unterscheiden wir
   incrementAll(Maybe.functor(), Maybe.Yes(1)).fix() // just 2
   incrementAll(Maybe.functor(), Maybe.No).fix() // No
 #+END_SRC
-*** TODO Λrrow Sugar
-*** TODO Monad Comprehensions
+*** Λrrow Sugar
+#+BEGIN_SRC kotlin
+  @higherkind
+  sealed class Maybe<out T> : MaybeOf<T> {
+          // ...
+  }
+#+END_SRC
+
+Und in einem anderen Projekt:
+
+#+BEGIN_SRC kotlin
+  @extension
+  interface MaybeFunctorInstance : Functor<ForMaybe> {
+      override fun // ...
+  }
+
+  val foo = incrementAll(Maybe.functor(), /* ... */)
+#+END_SRC
 ** TODO Beispiel
 Created: [2019-08-29 Thu 22:12]
 Ref: notes.org [[file:~/var/seafile/Seafile/itdesign/fp-workshop/notes.org::*Random:][Random:]]

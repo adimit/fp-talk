@@ -1,26 +1,26 @@
-import arrow.extension
-import arrow.higherkind
-
 /**
  * @author Aleksandar Dimitrov
  * @since  2019-09-01
  */
 
+
+
 interface Eqty<T> {
-    fun eq(a: T, b: T): Boolean
+    fun T.eq(b: T): Boolean
 }
 
 object StringEqtyInstance : Eqty<String> {
-    override fun eq(a: String, b: String): Boolean
-            = a.toLowerCase() == b.toLowerCase()
+    override fun String.eq(b: String): Boolean
+            = this.toLowerCase() == b.toLowerCase()
 }
 
 fun <T> List<T>.find(t: T, eqty: Eqty<T>): List<T>
         = flatMap { eqty.run {
-    if (eq(t, it)) listOf(it) else listOf() }
+    if (it.eq(t)) listOf(it) else listOf() }
 }
 
-fun fooList(l: List<String>) = l.find("FOO", StringEqtyInstance)
+val fooList = listOf("foo", "fOo", "bar").find("FOO", StringEqtyInstance)
+// ["foo", "fOo"]
 
 interface Functor<F> {
     fun <A, B> Kind<F, A>.map(f: (A) -> B): Kind<F, B>
