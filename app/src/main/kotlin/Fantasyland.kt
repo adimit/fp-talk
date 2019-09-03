@@ -1,10 +1,12 @@
+/*
+
 type interface Eq<A> {
     fun A.eq(b: A): Boolean
 }
-data class Record(val id: String, val name: String)
+data class withAnnotations.example.Record(val id: String, val name: String)
 
-instance Eq<Record> {
-    override fun Record.eq(b: Record) = this.id == b.id
+instance Eq<withAnnotations.example.Record> {
+    override fun withAnnotations.example.Record.eq(b: withAnnotations.example.Record) = this.id == b.id
 }
 
 fun <T: Eq> List<T>.filter(like: T): List<T> = TODO()
@@ -21,3 +23,5 @@ instance Functor<List> {
 
 fun <F> parseInt(intf: F<Int>): F<String> =
     intf.fmap { it.toString() }
+
+ */
